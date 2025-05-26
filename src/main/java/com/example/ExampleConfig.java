@@ -14,6 +14,6 @@ public interface ExampleConfig extends Config
 	)
 	default String greeting()
 	{
-		return "Hello";
+		return "Hello this is hamzeh's plug in test";
 	}
 }
