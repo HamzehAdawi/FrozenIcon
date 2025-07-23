@@ -7,7 +7,6 @@ import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.infobox.InfoBox;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import javax.inject.Inject;
 import java.awt.*;
@@ -15,22 +14,21 @@ import java.awt.image.BufferedImage;
 
 public class FrozenIconOverlay extends Overlay {
 
-    Client client;
-    FrozenIconConfig equipmentTotalConfig;
-    SpriteManager spriteManager;
-    InfoBoxManager infoBoxManager;
+    private final Client client;
+    private final SpriteManager spriteManager;
+    private final FrozenIconConfig config;
+    private int freezeStartTick;
+    private int freezeTick;
+    private boolean isFrozen = false;
 
     @Inject
-    FrozenIconOverlay(Client client,
-                      FrozenIconConfig equipmentTotalConfig,
-                      SpriteManager spriteManager, InfoBoxManager infoBoxManager)
+    FrozenIconOverlay(Client client, SpriteManager spriteManager,  FrozenIconConfig config)
     {
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
         this.client = client;
-        this.equipmentTotalConfig = equipmentTotalConfig;
         this.spriteManager = spriteManager;
-        this.infoBoxManager = infoBoxManager;
+        this.config = config;
 
     }
 
@@ -43,58 +41,62 @@ public class FrozenIconOverlay extends Overlay {
             return null;
         }
 
-
         final BufferedImage iceBarrageIcon = spriteManager.getSprite(SpriteID.SPELL_ICE_BARRAGE, 0);
-
-        Player local = client.getLocalPlayer();
-        if (iceBarrageIcon == null || local == null)
+        if (iceBarrageIcon == null)
         {
             return null;
         }
 
 
-        BufferedImage frozenIcon = null;
-        for (InfoBox box : infoBoxManager.getInfoBoxes()) {
+        if (!isFrozen)
+        {
+            isFrozen = freezeDetect(player.getGraphic());
+        }
+        int currentTick = client.getTickCount();
 
-            if (box.getImage() == iceBarrageIcon)
-            {
-                frozenIcon = box.getImage();
+
+        if (isFrozen && currentTick <= freezeStartTick + freezeTick)
+        {
+            int modelHeight = player.getLogicalHeight();
+            Point canvasPoint = Perspective.getCanvasImageLocation(client, player.getLocalLocation(), iceBarrageIcon, modelHeight);
+            if (canvasPoint != null) {
+                graphics2D.drawImage(
+                        iceBarrageIcon,
+                        canvasPoint.getX() + 25,
+                        canvasPoint.getY() - 5,
+                        16 + config.size(),
+                        16 + config.size(),
+                        null
+                );
             }
-
         }
-
-        if (frozenIcon == null)
+        else
         {
-            return null;
+            isFrozen = false;
+            freezeStartTick = 0;
+            freezeTick = 0;
         }
-
-        boolean hasIceBarrageInfoBox = infoBoxManager.getInfoBoxes().stream()
-                .anyMatch(box -> box.getImage() == iceBarrageIcon);
-
-        if (!hasIceBarrageInfoBox)
-        {
-            return null;
-        }
-
-        int modelHeight = local.getLogicalHeight();
-        Point canvasPoint = Perspective.getCanvasImageLocation(client, local.getLocalLocation(), iceBarrageIcon, modelHeight);
-        if (canvasPoint == null)
-        {
-            return null;
-        }
-
-
-        graphics2D.drawImage(
-                iceBarrageIcon,
-                canvasPoint.getX() + 25,
-                canvasPoint.getY() - 5,
-                16,
-                16,
-                null
-        );
 
         return null;
     }
 
 
+    private boolean freezeDetect(int gfxId)
+    {
+        switch (gfxId)
+        {
+            case 369: freezeTick = 33; break; // Ice Barrage
+            case 367: freezeTick = 25; break; // Ice Blitz
+            case 363: freezeTick = 17; break; // Ice Burst
+            case 362: freezeTick = 8; break;  // Ice Rush
+            case 181: freezeTick = 8; break;  // Bind
+            case 180: freezeTick = 17; break; // Snare
+            case 179: freezeTick = 25; break; // Entangle
+            default: return false;
+        }
+
+        freezeStartTick = client.getTickCount();
+        return true;
+
+    }
 }
