@@ -6,12 +6,12 @@ import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import javax.inject.Inject;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class FrozenIconOverlay extends Overlay {
+public class FrozenIconOverlay extends Overlay
+{
 
     private final Client client;
     private final SpriteManager spriteManager;
@@ -40,9 +40,6 @@ public class FrozenIconOverlay extends Overlay {
         {
             return null;
         }
-
-
-
 
         if (!isFrozen)
         {

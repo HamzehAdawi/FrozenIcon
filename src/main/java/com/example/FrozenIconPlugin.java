@@ -31,14 +31,14 @@ public class FrozenIconPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		overlayManager.add(equipmentOverlay);
-		log.info("Ice Barrage icon plug in started!");
+		log.info("Frozen icon plug in started!");
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		overlayManager.remove(equipmentOverlay);
-		log.info("Ice Barrage icon plug in stopped!");
+		log.info("Frozen icon plug in stopped!");
 	}
 
 	@Provides
