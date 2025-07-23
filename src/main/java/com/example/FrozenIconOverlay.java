@@ -2,7 +2,6 @@ package com.example;
 
 import net.runelite.api.*;
 import net.runelite.api.Point;
-import net.runelite.api.SpriteID;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -20,6 +19,7 @@ public class FrozenIconOverlay extends Overlay {
     private int freezeStartTick;
     private int freezeTick;
     private boolean isFrozen = false;
+    private int spriteId;
 
     @Inject
     FrozenIconOverlay(Client client, SpriteManager spriteManager,  FrozenIconConfig config)
@@ -41,11 +41,7 @@ public class FrozenIconOverlay extends Overlay {
             return null;
         }
 
-        final BufferedImage iceBarrageIcon = spriteManager.getSprite(SpriteID.SPELL_ICE_BARRAGE, 0);
-        if (iceBarrageIcon == null)
-        {
-            return null;
-        }
+
 
 
         if (!isFrozen)
@@ -57,6 +53,11 @@ public class FrozenIconOverlay extends Overlay {
 
         if (isFrozen && currentTick <= freezeStartTick + freezeTick)
         {
+            final BufferedImage iceBarrageIcon = spriteManager.getSprite(spriteId, 0);
+            if (iceBarrageIcon == null)
+            {
+                return null;
+            }
             int modelHeight = player.getLogicalHeight();
             Point canvasPoint = Perspective.getCanvasImageLocation(client, player.getLocalLocation(), iceBarrageIcon, modelHeight);
             if (canvasPoint != null) {
@@ -75,6 +76,7 @@ public class FrozenIconOverlay extends Overlay {
             isFrozen = false;
             freezeStartTick = 0;
             freezeTick = 0;
+            spriteId = 0;
         }
 
         return null;
@@ -85,13 +87,13 @@ public class FrozenIconOverlay extends Overlay {
     {
         switch (gfxId)
         {
-            case 369: freezeTick = 33; break; // Ice Barrage
-            case 367: freezeTick = 25; break; // Ice Blitz
-            case 363: freezeTick = 17; break; // Ice Burst
-            case 362: freezeTick = 8; break;  // Ice Rush
-            case 181: freezeTick = 8; break;  // Bind
-            case 180: freezeTick = 17; break; // Snare
-            case 179: freezeTick = 25; break; // Entangle
+            case 369: freezeTick = 33; spriteId = 328; break; // Ice Barrage
+            case 367: freezeTick = 25; spriteId = 327; break; // Ice Blitz
+            case 363: freezeTick = 17; spriteId = 326; break; // Ice Burst
+            case 362: freezeTick = 8; spriteId = 325; break;  // Ice Rush
+            case 181: freezeTick = 8; spriteId = 319; break;  // Bind
+            case 180: freezeTick = 17; spriteId = 320; break; // Snare
+            case 179: freezeTick = 25; spriteId = 321; break; // Entangle
             default: return false;
         }
 
