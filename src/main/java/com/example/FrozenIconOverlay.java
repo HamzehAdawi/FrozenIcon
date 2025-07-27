@@ -16,19 +16,17 @@ public class FrozenIconOverlay extends Overlay
     private final Client client;
     private final SpriteManager spriteManager;
     private final FrozenIconConfig config;
-    private int freezeStartTick;
-    private int freezeTick;
-    private boolean isFrozen = false;
-    private int spriteId;
+    private final FrozenIconPlugin plugin;
 
     @Inject
-    FrozenIconOverlay(Client client, SpriteManager spriteManager,  FrozenIconConfig config)
+    FrozenIconOverlay(Client client, SpriteManager spriteManager, FrozenIconConfig config, FrozenIconPlugin plugin)
     {
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
         this.client = client;
         this.spriteManager = spriteManager;
         this.config = config;
+        this.plugin = plugin;
 
     }
 
@@ -41,17 +39,14 @@ public class FrozenIconOverlay extends Overlay
             return null;
         }
 
-        if (!isFrozen)
-        {
-            isFrozen = freezeDetect(player.getGraphic());
-        }
         int currentTick = client.getTickCount();
+        int freezeDuration =  plugin.getFreezeStartTick() + plugin.getFreezeTick() + plugin.getImmunity();
 
-
-        if (isFrozen && currentTick <= freezeStartTick + freezeTick)
+        if (plugin.isFrozen() && currentTick < freezeDuration)
         {
-            final BufferedImage iceBarrageIcon = spriteManager.getSprite(spriteId, 0);
-            if (iceBarrageIcon == null)
+            BufferedImage iceBarrageIcon = spriteManager.getSprite(plugin.getSpriteId(), 0);
+
+            if (iceBarrageIcon == null || currentTick > freezeDuration - plugin.getImmunity())
             {
                 return null;
             }
@@ -70,32 +65,9 @@ public class FrozenIconOverlay extends Overlay
         }
         else
         {
-            isFrozen = false;
-            freezeStartTick = 0;
-            freezeTick = 0;
-            spriteId = 0;
+            plugin.freezeFinished();
         }
 
         return null;
-    }
-
-
-    private boolean freezeDetect(int gfxId)
-    {
-        switch (gfxId)
-        {
-            case 369: freezeTick = 33; spriteId = 328; break; // Ice Barrage
-            case 367: freezeTick = 25; spriteId = 327; break; // Ice Blitz
-            case 363: freezeTick = 17; spriteId = 326; break; // Ice Burst
-            case 362: freezeTick = 8; spriteId = 325; break;  // Ice Rush
-            case 181: freezeTick = 8; spriteId = 319; break;  // Bind
-            case 180: freezeTick = 17; spriteId = 320; break; // Snare
-            case 179: freezeTick = 25; spriteId = 321; break; // Entangle
-            default: return false;
-        }
-
-        freezeStartTick = client.getTickCount();
-        return true;
-
     }
 }
