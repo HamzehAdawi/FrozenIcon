@@ -111,7 +111,6 @@ public class FrozenIconPlugin extends Plugin
 		String message = event.getMessage();
 		if (message.contains(FROZEN_MSG))
 		{
-			log.info("It matched");
 			freezePending = true;
 		}
 	}
