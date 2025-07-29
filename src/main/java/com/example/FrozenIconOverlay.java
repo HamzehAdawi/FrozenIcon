@@ -63,10 +63,6 @@ public class FrozenIconOverlay extends Overlay
                 );
             }
         }
-        else
-        {
-            plugin.freezeFinished();
-        }
 
         return null;
     }

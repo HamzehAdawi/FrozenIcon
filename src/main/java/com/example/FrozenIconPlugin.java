@@ -10,7 +10,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicChanged;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -28,16 +27,10 @@ public class FrozenIconPlugin extends Plugin
 	private Client client;
 
 	@Inject
-	private FrozenIconConfig config;
+	private FrozenIconOverlay frozenIconOverlay;
 
 	@Inject
-	FrozenIconOverlay equipmentOverlay;
-
-	@Inject
-	OverlayManager overlayManager;
-
-	@Inject
-	EventBus eventBus;
+	private OverlayManager overlayManager;
 
 	@Getter(AccessLevel.PACKAGE)
 	private int freezeStartTick;
@@ -59,16 +52,14 @@ public class FrozenIconPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		eventBus.register(this);
-		overlayManager.add(equipmentOverlay);
+		overlayManager.add(frozenIconOverlay);
 		log.info("Frozen icon plug in started!");
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
-		eventBus.unregister(this);
-		overlayManager.remove(equipmentOverlay);
+		overlayManager.remove(frozenIconOverlay);
 		log.info("Frozen icon plug in stopped!");
 	}
 
@@ -123,17 +114,18 @@ public class FrozenIconPlugin extends Plugin
 			findIceSpell();
 			freezePending = false;
 		}
+		if (isFrozen && client.getTickCount() > freezeStartTick + freezeTick + immunity)
+		{
+			isFrozen = false;
+			freezeStartTick = 0;
+			freezeTick = 0;
+			spriteId = 0;
+			immunity = 0;
+		}
 	}
 
-	public void freezeFinished() {
-		isFrozen = false;
-		freezeStartTick = 0;
-		freezeTick = 0;
-		spriteId = 0;
-		immunity = 0;
-	}
-
-	private void findIceSpell() {
+	private void findIceSpell()
+	{
 
 		Player player = client.getLocalPlayer();
 		int gfxId = player.getGraphic();
