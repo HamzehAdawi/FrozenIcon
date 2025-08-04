@@ -17,4 +17,13 @@ public interface FrozenIconConfig extends Config
         return 1;
     }
 
+    @ConfigItem(
+            keyName = "freezeTimer",
+            name = "Freeze timer",
+            description = "Show freeze timer next to icon."
+    )
+    default boolean  freezeTimer()
+    {
+        return true;
+    }
 }

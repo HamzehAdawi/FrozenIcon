@@ -2,7 +2,6 @@ package com.example;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -32,21 +31,23 @@ public class FrozenIconPlugin extends Plugin
 	@Inject
 	private OverlayManager overlayManager;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Getter
 	private int freezeStartTick;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Getter
 	private int freezeTick;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Getter
 	private boolean isFrozen;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Getter
 	private int immunity;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Getter
 	private int spriteId;
 
+	@Getter
+	private int freezeTime;
 	private boolean freezePending;
 
 	@Override
@@ -72,7 +73,6 @@ public class FrozenIconPlugin extends Plugin
 	@Subscribe
 	public void onGraphicChanged(GraphicChanged event)
 	{
-
 		Player player = client.getLocalPlayer();
 		if (event.getActor() != player)
 		{
@@ -88,6 +88,7 @@ public class FrozenIconPlugin extends Plugin
 			default: return;
 		}
 		isFrozen = true;
+		freezeTime = freezeTick;
 		freezeStartTick = client.getTickCount();
 	}
 
@@ -109,6 +110,7 @@ public class FrozenIconPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
+		Player player = client.getLocalPlayer();
 		if (freezePending)
 		{
 			findIceSpell();
@@ -121,12 +123,16 @@ public class FrozenIconPlugin extends Plugin
 			freezeTick = 0;
 			spriteId = 0;
 			immunity = 0;
+			freezeTime = 0;
+		}
+		if (freezeTime > 0)
+		{
+			freezeTime--;
 		}
 	}
 
 	private void findIceSpell()
 	{
-
 		Player player = client.getLocalPlayer();
 		int gfxId = player.getGraphic();
 
@@ -139,6 +145,7 @@ public class FrozenIconPlugin extends Plugin
 			default: return;
 		}
 		isFrozen = true;
+		freezeTime = freezeTick;
 		freezeStartTick = client.getTickCount();
 		immunity = 5;
 	}

@@ -12,7 +12,6 @@ import java.awt.image.BufferedImage;
 
 public class FrozenIconOverlay extends Overlay
 {
-
     private final Client client;
     private final SpriteManager spriteManager;
     private final FrozenIconConfig config;
@@ -27,7 +26,6 @@ public class FrozenIconOverlay extends Overlay
         this.spriteManager = spriteManager;
         this.config = config;
         this.plugin = plugin;
-
     }
 
     @Override
@@ -45,14 +43,19 @@ public class FrozenIconOverlay extends Overlay
         if (plugin.isFrozen() && currentTick < freezeDuration)
         {
             BufferedImage iceBarrageIcon = spriteManager.getSprite(plugin.getSpriteId(), 0);
-
             if (iceBarrageIcon == null || currentTick > freezeDuration - plugin.getImmunity())
             {
                 return null;
             }
             int modelHeight = player.getLogicalHeight();
-            Point canvasPoint = Perspective.getCanvasImageLocation(client, player.getLocalLocation(), iceBarrageIcon, modelHeight);
-            if (canvasPoint != null) {
+            Point canvasPoint = Perspective.getCanvasImageLocation(
+                    client,
+                    player.getLocalLocation(),
+                    iceBarrageIcon,
+                    modelHeight);
+
+            if (canvasPoint != null)
+            {
                 graphics2D.drawImage(
                         iceBarrageIcon,
                         canvasPoint.getX() + 25,
@@ -61,9 +64,27 @@ public class FrozenIconOverlay extends Overlay
                         16 + config.size(),
                         null
                 );
+
+                if (config.freezeTimer())
+                {
+                    if (plugin.getFreezeTime() <= 5)
+                    {
+                        graphics2D.setColor(Color.RED);
+                    }
+
+                    graphics2D.setFont(graphics2D.getFont().deriveFont(
+                            graphics2D.getFont().getStyle(),
+                            graphics2D.getFont().getSize() + config.size()
+                    ));
+
+                    graphics2D.drawString(
+                            String.valueOf(plugin.getFreezeTime()),
+                            canvasPoint.getX() + config.size() + 45,
+                            canvasPoint.getY() + config.size() + 11
+                    );
+                }
             }
         }
-
         return null;
     }
 }
