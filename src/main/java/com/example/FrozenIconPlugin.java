@@ -5,6 +5,7 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicChanged;
@@ -48,6 +49,10 @@ public class FrozenIconPlugin extends Plugin
 
 	@Getter
 	private int freezeTime;
+
+    @Getter
+    private WorldPoint frozenLocation;
+
 	private boolean freezePending;
 
 	@Override
@@ -111,12 +116,16 @@ public class FrozenIconPlugin extends Plugin
 	public void onGameTick(GameTick event)
 	{
 		Player player = client.getLocalPlayer();
-		if (freezePending)
+        WorldPoint currentWorldPoint = player.getWorldLocation();
+
+        if (freezePending)
 		{
 			findIceSpell();
+            frozenLocation = player.getWorldLocation();
 			freezePending = false;
 		}
-		if (isFrozen && client.getTickCount() > freezeStartTick + freezeTick + immunity)
+		if (isFrozen && client.getTickCount() > freezeStartTick + freezeTick + immunity
+                || !currentWorldPoint.equals(frozenLocation))
 		{
 			isFrozen = false;
 			freezeStartTick = 0;
