@@ -38,7 +38,7 @@ public class FrozenIconOverlay extends Overlay
         }
 
         int currentTick = client.getTickCount();
-        int freezeDuration =  plugin.getFreezeStartTick() + plugin.getFreezeTick() + plugin.getImmunity();
+        int freezeDuration = plugin.getFreezeStartTick() + plugin.getFreezeTick() + plugin.getImmunity();
 
         if (plugin.isFrozen() && currentTick < freezeDuration)
         {
@@ -56,12 +56,14 @@ public class FrozenIconOverlay extends Overlay
 
             if (canvasPoint != null)
             {
+                int yOffset = plugin.isLengthOffset() ? 8:16;
+                int xOffset = plugin.isWidthOffset() ? 8:16;
                 graphics2D.drawImage(
                         iceBarrageIcon,
                         canvasPoint.getX() + 25,
                         canvasPoint.getY() - 5,
-                        16 + config.size(),
-                        16 + config.size(),
+                        config.size() + yOffset,
+                        config.size() + xOffset,
                         null
                 );
 

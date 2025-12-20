@@ -14,7 +14,7 @@ public interface FrozenIconConfig extends Config
     )
     default int size()
     {
-        return 1;
+        return 3;
     }
 
     @ConfigItem(
