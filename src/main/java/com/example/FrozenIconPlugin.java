@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ActorDeath;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicChanged;
@@ -22,24 +23,30 @@ import net.runelite.client.ui.overlay.OverlayManager;
 )
 public class FrozenIconPlugin extends Plugin
 {
-	private static final String FROZEN_MSG = "<col=ef1020>You have been frozen!</col>";
-    private static final int BIND_ID = 319;
-    private static final int BIND_TICKS = 8;
-    private static final int SNARE_ID = 320;
-    private static final int SNARE_TICKS = 17;
-    private static final int ENTANGLE_ID = 321;
-    private static final int ENTANGLE_TICKS = 25;
-    private static final int ICE_BARRAGE_ID = 328;
-    private static final int ICE_BARRAGE_TICKS = 33;
-    private static final int ICE_BLITZ_ID = 326;
-    private static final int ICE_BLITZ_TICKS = 17;
-    private static final int ICE_BURST_ID = 327;
-    private static final int ICE_BURST_TICKS = 25;
-    private static final int ICE_RUSH_ID = 325;
-    private static final int ICE_RUSH_TICKS = 8;
+    protected final String FROZEN_MSG = "<col=ef1020>You have been frozen!</col>";
+    protected final int BIND_ID = 319;
+    protected final int BIND_TICKS = 8;
+    protected final int SNARE_ID = 320;
+    protected final int SNARE_TICKS = 17;
+    protected final int ENTANGLE_ID = 321;
+    protected final int ENTANGLE_TICKS = 25;
+    protected final int ICE_BARRAGE_ID = 328;
+    protected final int ICE_BARRAGE_TICKS = 33;
+    protected final int ICE_BLITZ_ID = 326;
+    protected final int ICE_BLITZ_TICKS = 17;
+    protected final int ICE_BURST_ID = 327;
+    protected final int ICE_BURST_TICKS = 25;
+    protected final int ICE_RUSH_ID = 325;
+    protected final int ICE_RUSH_TICKS = 8;
+    protected final int TELE_BLOCK_TICKS = 500;
+    protected final int TELE_BLOCK_ID = 352;
+    protected final int SHIELD_IMMUNITY = 760;
 
     @Inject
 	private Client client;
+
+    @Inject
+    private FrozenIconConfig config;
 
 	@Inject
 	private FrozenIconOverlay frozenIconOverlay;
@@ -48,16 +55,10 @@ public class FrozenIconPlugin extends Plugin
 	private OverlayManager overlayManager;
 
 	@Getter
-	private int freezeStartTick;
-
-	@Getter
-	private int freezeTick;
+	private int stopFreezeTick;
 
 	@Getter
 	private boolean isFrozen;
-
-	@Getter
-	private int immunity;
 
 	@Getter
 	private int spriteId;
@@ -74,7 +75,21 @@ public class FrozenIconPlugin extends Plugin
     @Getter
     private boolean lengthOffset;
 
-	private boolean freezePending;
+    @Getter
+    private boolean isTb;
+
+    @Getter
+    private int stopTbTick;
+
+    @Getter
+    private int stopImmunityTick;
+
+    @Getter
+    private boolean isShield;
+
+    private int freezeTick;
+
+    private boolean freezePending;
 
 	@Override
 	protected void startUp() throws Exception
@@ -106,17 +121,23 @@ public class FrozenIconPlugin extends Plugin
 			return;
 		}
 
-		int gfxId = actor.getGraphic();
-		switch (gfxId)
+        int gfxId = actor.getGraphic();
+        switch (gfxId)
 		{
             case SpotanimID.BIND_IMPACT: freezeTick = BIND_TICKS; spriteId = BIND_ID; break;
             case SpotanimID.SNARE_IMPACT: freezeTick = SNARE_TICKS; spriteId = SNARE_ID; break;
             case SpotanimID.ENTANGLE_IMPACT: freezeTick = ENTANGLE_TICKS; spriteId = ENTANGLE_ID; break;
+            case SpotanimID.TELE_BLOCK_IMPACT:
+                if (isTb || !config.showTeleBlock()) return;
+                stopTbTick = (player.getOverheadIcon() != HeadIcon.MAGIC ?
+                            TELE_BLOCK_TICKS:(TELE_BLOCK_TICKS/2)) + client.getTickCount();
+                isTb = true;
+                return;
 			default: return;
 		}
 		isFrozen = true;
 		freezeTime = freezeTick;
-		freezeStartTick = client.getTickCount();
+        stopFreezeTick = freezeTick + client.getTickCount();
         frozenLocation = player.getWorldLocation();
     }
 
@@ -135,52 +156,90 @@ public class FrozenIconPlugin extends Plugin
 		}
 	}
 
-	@Subscribe
-	public void onGameTick(GameTick event)
-	{
-		Player player = client.getLocalPlayer();
+    @Subscribe
+    public void onGameTick(GameTick event)
+    {
+        Player player = client.getLocalPlayer();
         WorldPoint currentWorldPoint = player.getWorldLocation();
 
         if (freezePending)
-		{
-			findIceSpell();
+        {
+            findIceSpell();
             frozenLocation = player.getWorldLocation();
-			freezePending = false;
-		}
-		if (isFrozen && client.getTickCount() > freezeStartTick + freezeTick + immunity
-                || !currentWorldPoint.equals(frozenLocation))
-		{
-			isFrozen = false;
-			freezeStartTick = 0;
-			freezeTick = 0;
-			spriteId = 0;
-			immunity = 0;
-			freezeTime = 0;
-            widthOffset = false;
-            lengthOffset = false;
-		}
-		if (freezeTime > 0)
-		{
-			freezeTime--;
-		}
-	}
+            freezePending = false;
+        }
+
+        int currTick = client.getTickCount();
+
+        if (isTb && (currTick >= stopTbTick || (player.getInteracting() != null && player.getInteracting().isDead())))
+        {
+            resetTb();
+        }
+
+        if (isShield && currTick >= stopImmunityTick) resetImmunity();
+
+        if (isFrozen && (currTick >= stopFreezeTick || !currentWorldPoint.equals(frozenLocation)))
+        {
+            resetFreeze();
+            if (config.showImmunity())
+            {
+                isShield = true;
+                stopImmunityTick = 5 + client.getTickCount();
+            }
+        }
+        freezeTime = freezeTime > 0 ? freezeTime-1:freezeTime;
+    }
+
+    @Subscribe
+    public void onActorDeath(ActorDeath actorDeath) {
+        Player player = client.getLocalPlayer();
+        if (actorDeath.getActor() == player)
+        {
+            resetFreeze();
+            resetTb();
+            resetImmunity();
+        }
+    }
 
 	private void findIceSpell()
 	{
 		Player player = client.getLocalPlayer();
-		int gfxId = player.getGraphic();
 
-		switch (gfxId)
-		{
+        int gfxId = player.getGraphic();
+        switch (gfxId)
+        {
             case SpotanimID.ICE_BARRAGE_IMPACT: freezeTick = ICE_BARRAGE_TICKS; spriteId = ICE_BARRAGE_ID; break;
             case SpotanimID.ICE_BURST_IMPACT: freezeTick = ICE_BURST_TICKS; spriteId = ICE_BURST_ID; lengthOffset = true; break;
             case SpotanimID.ICE_BLITZ_IMPACT: freezeTick = ICE_BLITZ_TICKS; spriteId = ICE_BLITZ_ID; break;
             case SpotanimID.ICE_RUSH_IMPACT: freezeTick = ICE_RUSH_TICKS;  spriteId = ICE_RUSH_ID; widthOffset = true; break;
-			default: return;
-		}
+            default: return;
+        }
+
 		isFrozen = true;
 		freezeTime = freezeTick;
-		freezeStartTick = client.getTickCount();
-		immunity = 5;
+        stopFreezeTick = freezeTick + client.getTickCount();
 	}
+
+    private void resetFreeze()
+    {
+        spriteId = 0;
+        freezeTick = 0;
+        stopFreezeTick = 0;
+        freezeTime = 0;
+        widthOffset = false;
+        lengthOffset = false;
+        isFrozen = false;
+    }
+
+    private void resetTb()
+    {
+        isTb = false;
+        stopTbTick = 0;
+    }
+
+    private void resetImmunity()
+    {
+        isShield = false;
+        stopImmunityTick = 0;
+    }
 }
