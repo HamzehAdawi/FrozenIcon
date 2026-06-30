@@ -1,5 +1,7 @@
 package com.example;
 
+import java.time.Instant;
+
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.Getter;
@@ -67,6 +69,12 @@ public class FrozenIconPlugin extends Plugin
 	private int freezeTime;
 
     @Getter
+    private Instant freezeTimeSecs;
+
+    @Getter
+    private Instant endFreezeTimeSecs;
+
+    @Getter
     private WorldPoint frozenLocation;
 
     @Getter
@@ -110,36 +118,6 @@ public class FrozenIconPlugin extends Plugin
 	{
 		return configManager.getConfig(FrozenIconConfig.class);
 	}
-
-	@Subscribe
-	public void onGraphicChanged(GraphicChanged event)
-	{
-		Player player = client.getLocalPlayer();
-        Actor actor = event.getActor();
-		if (actor != player)
-		{
-			return;
-		}
-
-        int gfxId = actor.getGraphic();
-        switch (gfxId)
-		{
-            case SpotanimID.BIND_IMPACT: freezeTick = BIND_TICKS; spriteId = BIND_ID; break;
-            case SpotanimID.SNARE_IMPACT: freezeTick = SNARE_TICKS; spriteId = SNARE_ID; break;
-            case SpotanimID.ENTANGLE_IMPACT: freezeTick = ENTANGLE_TICKS; spriteId = ENTANGLE_ID; break;
-            case SpotanimID.TELE_BLOCK_IMPACT:
-                if (isTb || !config.showTeleBlock()) return;
-                stopTbTick = (player.getOverheadIcon() != HeadIcon.MAGIC ?
-                            TELE_BLOCK_TICKS:(TELE_BLOCK_TICKS/2)) + client.getTickCount();
-                isTb = true;
-                return;
-			default: return;
-		}
-		isFrozen = true;
-		freezeTime = freezeTick;
-        stopFreezeTick = freezeTick + client.getTickCount();
-        frozenLocation = player.getWorldLocation();
-    }
 
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
@@ -201,6 +179,39 @@ public class FrozenIconPlugin extends Plugin
         }
     }
 
+    @Subscribe
+	public void onGraphicChanged(GraphicChanged event)
+	{
+		Player player = client.getLocalPlayer();
+        Actor actor = event.getActor();
+		if (actor != player)
+		{
+			return;
+		}
+
+        int gfxId = actor.getGraphic();
+        switch (gfxId)
+		{
+            case SpotanimID.BIND_IMPACT: freezeTick = BIND_TICKS; spriteId = BIND_ID; break;
+            case SpotanimID.SNARE_IMPACT: freezeTick = SNARE_TICKS; spriteId = SNARE_ID; break;
+            case SpotanimID.ENTANGLE_IMPACT: freezeTick = ENTANGLE_TICKS; spriteId = ENTANGLE_ID; break;
+            case SpotanimID.TELE_BLOCK_IMPACT:
+                if (isTb || !config.showTeleBlock()) return;
+                stopTbTick = (player.getOverheadIcon() != HeadIcon.MAGIC ?
+                            TELE_BLOCK_TICKS:(TELE_BLOCK_TICKS/2)) + client.getTickCount();
+                isTb = true;
+                return;
+			default: return;
+		}
+
+		isFrozen = true;
+        freezeTimeSecs = Instant.now();
+        endFreezeTimeSecs = Instant.now().plusSeconds((long)(freezeTick * .6));
+		freezeTime = freezeTick;
+        stopFreezeTick = freezeTick + client.getTickCount();
+        frozenLocation = player.getWorldLocation();
+    }
+
 	private void findIceSpell()
 	{
 		Player player = client.getLocalPlayer();
@@ -216,6 +227,8 @@ public class FrozenIconPlugin extends Plugin
         }
 
 		isFrozen = true;
+        freezeTimeSecs = Instant.now();
+        endFreezeTimeSecs = Instant.now().plusSeconds((long)(freezeTick * .6));
 		freezeTime = freezeTick;
         stopFreezeTick = freezeTick + client.getTickCount();
 	}

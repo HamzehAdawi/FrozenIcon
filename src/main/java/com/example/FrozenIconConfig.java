@@ -22,9 +22,9 @@ public interface FrozenIconConfig extends Config
             name = "Freeze timer",
             description = "Show freeze timer next to icon."
     )
-    default boolean freezeTimer()
+    default TimeUnit freezeTimer()
     {
-        return true;
+        return TimeUnit.TICKS;
     }
 
     @ConfigItem(

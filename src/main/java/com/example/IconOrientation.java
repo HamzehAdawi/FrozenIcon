@@ -1,6 +1,7 @@
 package com.example;
 
-public enum IconOrientation {
+public enum IconOrientation
+{
     LEFT,
     RIGHT
 }

@@ -9,6 +9,8 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import javax.inject.Inject;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,7 +81,7 @@ public class FrozenIconOverlay extends Overlay
                                 null
                         );
 
-                        if (config.freezeTimer() && icon != plugin.SHIELD_IMMUNITY
+                        if (!config.freezeTimer().equals(TimeUnit.NONE) && icon != plugin.SHIELD_IMMUNITY
                             && icon != plugin.TELE_BLOCK_ID)
                         {
                             if (plugin.getFreezeTime() <= 5)
@@ -93,8 +95,12 @@ public class FrozenIconOverlay extends Overlay
                             ));
 
                             int timerOffset = config.iconOrientation() == IconOrientation.RIGHT ? 45:-45;
+                            int timeToShow = config.freezeTimer().equals(TimeUnit.SECONDS) ?
+                                    (int) Duration.between(Instant.now(), plugin.getEndFreezeTimeSecs()).toSeconds()
+                                    :plugin.getFreezeTime();
+
                             graphics2D.drawString(
-                                    String.valueOf(plugin.getFreezeTime()),
+                                    String.valueOf(timeToShow),
                                     canvasPoint.getX() + config.size() + timerOffset,
                                     canvasPoint.getY() + config.size() + 11 - adjustIcon
                             );
